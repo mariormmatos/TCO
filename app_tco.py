@@ -368,7 +368,8 @@ def build_pdf_report(results: List[CalculationResult], user_name: str) -> bytes:
         pdf.cell(50, 6, f"{r.resale_value:,.2f}", 0, 1)
         pdf.ln(5)
 
-    return pdf.output(dest='S').encode('latin-1', 'replace')
+    raw = pdf.output(dest='S')
+    return raw if isinstance(raw, bytes) else raw.encode('latin-1', 'replace')
 
 
 # =========================================================
