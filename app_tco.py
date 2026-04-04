@@ -290,23 +290,23 @@ def get_display_user() -> str:
 # =========================================================
 class PDFReport(FPDF):
     def header(self):
-        self.set_font('Arial', 'B', 15)
+        self.set_font('Helvetica', 'B', 15)
         self.cell(0, 10, 'TCO Calculator Report', 0, 1, 'C')
         self.ln(5)
 
     def footer(self):
         self.set_y(-15)
-        self.set_font('Arial', 'I', 8)
+        self.set_font('Helvetica', 'I', 8)
         self.cell(0, 10, f'Page {self.page_no()}', 0, 0, 'C')
 
     def chapter_title(self, txt):
-        self.set_font('Arial', 'B', 12)
+        self.set_font('Helvetica', 'B', 12)
         self.set_fill_color(200, 220, 255)
         self.cell(0, 8, txt, 0, 1, 'L', 1)
         self.ln(4)
 
     def chapter_body(self, txt):
-        self.set_font('Arial', '', 10)
+        self.set_font('Helvetica', '', 10)
         self.multi_cell(0, 5, txt)
         self.ln()
 
@@ -316,7 +316,7 @@ def build_pdf_report(results: List[CalculationResult], user_name: str) -> bytes:
     pdf.set_auto_page_break(auto=True, margin=15)
     
     # Meta Info
-    pdf.set_font("Arial", "", 10)
+    pdf.set_font("Helvetica", "", 10)
     pdf.cell(0, 6, f"Gerado em: {datetime.now().strftime('%Y-%m-%d %H:%M')}", 0, 1)
     pdf.cell(0, 6, f"Utilizador: {user_name}", 0, 1)
     pdf.ln(10)
@@ -325,7 +325,7 @@ def build_pdf_report(results: List[CalculationResult], user_name: str) -> bytes:
     pdf.chapter_title("Comparativo Geral")
     
     # Header
-    pdf.set_font("Arial", "B", 9)
+    pdf.set_font("Helvetica", "B", 9)
     cols = ["Viatura", "TCO Total", "EUR/Km", "Revenda"]
     col_widths = [60, 40, 40, 40]
     
@@ -334,7 +334,7 @@ def build_pdf_report(results: List[CalculationResult], user_name: str) -> bytes:
     pdf.ln()
     
     # Rows
-    pdf.set_font("Arial", "", 9)
+    pdf.set_font("Helvetica", "", 9)
     for r in results:
         pdf.cell(col_widths[0], 7, r.vehicle_name, 1)
         pdf.cell(col_widths[1], 7, f"{r.total_cost:,.2f}", 1, 0, 'R')
@@ -348,7 +348,7 @@ def build_pdf_report(results: List[CalculationResult], user_name: str) -> bytes:
     for r in results:
         pdf.chapter_title(f"Detalhe: {r.vehicle_name}")
         
-        pdf.set_font("Arial", "", 9)
+        pdf.set_font("Helvetica", "", 9)
         pdf.cell(50, 6, "Aquisicao:", 0)
         pdf.cell(50, 6, f"{r.acquisition_cost:,.2f}", 0, 1)
         
@@ -368,8 +368,10 @@ def build_pdf_report(results: List[CalculationResult], user_name: str) -> bytes:
         pdf.cell(50, 6, f"{r.resale_value:,.2f}", 0, 1)
         pdf.ln(5)
 
-    raw = pdf.output(dest='S')
-    return raw if isinstance(raw, bytes) else raw.encode('latin-1', 'replace')
+    raw = pdf.output()
+    if isinstance(raw, (bytes, bytearray)):
+        return bytes(raw)
+    return raw.encode('latin-1', 'replace')
 
 
 # =========================================================
