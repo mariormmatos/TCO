@@ -592,7 +592,7 @@ def render_saved_sims(show_header: bool = True):
     for sim in st.session_state.saved_sims[:20]:
         c1, c2, c3 = st.columns([5, 1, 1])
         with c1:
-            st.write(f”**{sim.get('id','sim')}** — {sim.get('saved_at','')}”)
+            st.write(f"**{sim.get('id','sim')}** — {sim.get('saved_at','')}")
         with c2:
             if st.button(t("load"), key=f"load_{sim.get('id')}"):
                 st.session_state["pending_load_sim"] = sim
