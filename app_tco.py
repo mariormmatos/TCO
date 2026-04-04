@@ -590,7 +590,7 @@ def render_saved_sims(show_header: bool = True):
     for sim in st.session_state.saved_sims[:20]:
         c1, c2, c3 = st.columns([5, 1, 1])
         with c1:
-            st.write(f"**{sim.get('id','sim')}** â€” {sim.get('saved_at','')}")
+            st.write(f”**{sim.get('id','sim')}** — {sim.get('saved_at','')}”)
         with c2:
             if st.button(t("load"), key=f"load_{sim.get('id')}"):
                 st.session_state["pending_load_sim"] = sim
@@ -751,12 +751,11 @@ def main():
         with c3:
             st.number_input(t("km_current"), 0, 500000, step=1000, key="v_km_current")
             st.toggle(t("imported"), key="v_imported")
-            if st.session_state["v_imported"] and st.session_state["fuel_type"] != "Elétrico":
+            if st.session_state["fuel_type"] != "Elétrico":
                 st.number_input(t("co2"), 0, 400, key="v_co2")
                 st.number_input(t("cc"), 0, 6000, step=100, key="v_cc")
             else:
-                # CO2/CC não aplicável (mantemos 0 no cálculo sem mexer no estado do widget)
-                # (sem alteração de st.session_state aqui para evitar erro de widget)
+                # CO2/CC não aplicável para elétricos
                 pass
         # --- callbacks (evita modificar st.session_state depois dos widgets estarem instanciados) ---
         if 'last_vehicle_error' not in st.session_state: st.session_state['last_vehicle_error'] = ''
@@ -766,10 +765,10 @@ def main():
             try:
                 vid = st.session_state.get('editing_id') or f"v_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}"
                 fuel = st.session_state.get('fuel_type', 'Gasolina')
-                # CO2/cc só faz sentido para importado não-elétrico
+                # CO2/cc usados para IUC (todos os ICE) e ISV (importados)
                 imported = bool(st.session_state.get('v_imported', False))
-                co2 = float(st.session_state.get('v_co2', 0) or 0) if imported and fuel != 'Elétrico' else 0.0
-                cc = int(st.session_state.get('v_cc', 0) or 0) if imported and fuel != 'Elétrico' else 0
+                co2 = float(st.session_state.get('v_co2', 0) or 0) if fuel != 'Elétrico' else 0.0
+                cc = int(st.session_state.get('v_cc', 0) or 0) if fuel != 'Elétrico' else 0
 
                 v = Vehicle(
                     id=vid,
