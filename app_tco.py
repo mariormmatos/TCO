@@ -9,6 +9,15 @@ import io
 from fpdf import FPDF
 from models import Vehicle, TcoParams, CalculationResult
 from engine import TCOEngine
+from theme_mint_ledger import (
+    apply_theme,
+    style_plotly,
+    VEHICLE_PALETTE,
+    SEG_COLORS,
+    render_hero,
+    render_leaderboard,
+    heatmap_styler,
+)
 import db
 
 # =========================================================
@@ -128,157 +137,8 @@ def t(key: str) -> str:
     return I18N.get(lang, I18N["pt"]).get(key, key)
 
 # =========================================================
-# Theme & helpers
+# Helpers
 # =========================================================
-def apply_theme():
-    st.markdown(
-        """
-        <style>
-        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
-
-        :root {
-            --bg-1: #0b1220;
-            --bg-2: #0f172a;
-            --ink: #e2e8f0;
-            --muted: #94a3b8;
-            --accent: #1f7ae0;
-            --accent-2: #2fb6c2;
-            --card: rgba(15, 23, 42, 0.92);
-            --card-stroke: rgba(148, 163, 184, 0.18);
-            --shadow: 0 20px 50px rgba(2, 6, 23, 0.45);
-        }
-
-        html, body, [data-testid="stAppViewContainer"] {
-            background:
-                radial-gradient(900px circle at 10% -10%, rgba(31, 122, 224, 0.18) 0%, transparent 60%),
-                radial-gradient(700px circle at 90% 5%, rgba(47, 182, 194, 0.18) 0%, transparent 55%),
-                linear-gradient(180deg, var(--bg-1), var(--bg-2));
-            color: var(--ink);
-            font-family: "Space Grotesk", sans-serif;
-        }
-
-        .main .block-container {
-            padding-top: 2rem;
-            animation: fadeUp 0.6s ease-out both;
-            color: var(--ink);
-        }
-
-        @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        h1, h2, h3 {
-            letter-spacing: -0.02em;
-        }
-
-        .hero {
-            background: var(--card);
-            border: 1px solid var(--card-stroke);
-            border-radius: 18px;
-            padding: 1.2rem 1.4rem;
-            box-shadow: var(--shadow);
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            justify-content: space-between;
-            gap: 1rem;
-        }
-
-        .hero-title {
-            font-size: 2.1rem;
-            font-weight: 700;
-            margin: 0;
-        }
-
-        .hero-caption {
-            color: var(--muted);
-            margin: 0.25rem 0 0 0;
-        }
-
-        .hero-chip {
-            background: linear-gradient(135deg, var(--accent), var(--accent-2));
-            color: #fff;
-            padding: 0.5rem 0.9rem;
-            border-radius: 999px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            box-shadow: 0 10px 25px rgba(31, 122, 224, 0.25);
-        }
-
-        .stTabs [data-baseweb="tab-list"] {
-            gap: 0.5rem;
-            padding: 0.4rem 0.2rem;
-        }
-
-        .stTabs [data-baseweb="tab"] {
-            background: rgba(17, 24, 39, 0.9);
-            border: 1px solid var(--card-stroke);
-            border-radius: 999px;
-            padding: 0.45rem 1.1rem;
-            color: var(--ink);
-        }
-
-        .stTabs [aria-selected="true"] {
-            background: linear-gradient(135deg, var(--accent), var(--accent-2));
-            color: #fff !important;
-            box-shadow: 0 12px 30px rgba(31, 122, 224, 0.25);
-            border: none;
-        }
-
-        .stButton > button {
-            background: linear-gradient(135deg, var(--accent), var(--accent-2));
-            color: #fff;
-            border: none;
-            border-radius: 12px;
-            padding: 0.55rem 1.1rem;
-            font-weight: 600;
-            box-shadow: 0 12px 26px rgba(31, 122, 224, 0.22);
-            transition: transform 0.15s ease, box-shadow 0.15s ease;
-        }
-
-        .stButton > button:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 18px 36px rgba(31, 122, 224, 0.28);
-        }
-
-        .stTextInput input, .stNumberInput input, .stSelectbox select, .stTextArea textarea {
-            border-radius: 10px !important;
-            border: 1px solid rgba(148, 163, 184, 0.2) !important;
-            background: rgba(15, 23, 42, 0.9) !important;
-            color: var(--ink) !important;
-        }
-
-        .stDataFrame, .stTable {
-            border-radius: 14px;
-            border: 1px solid var(--card-stroke);
-            overflow: hidden;
-            background: rgba(15, 23, 42, 0.9);
-        }
-
-        section[data-testid="stSidebar"] > div {
-            background: linear-gradient(180deg, #0f172a 0%, #111827 100%);
-            color: #e2e8f0;
-        }
-
-        section[data-testid="stSidebar"] .stTextInput input,
-        section[data-testid="stSidebar"] .stNumberInput input,
-        section[data-testid="stSidebar"] .stSelectbox select {
-            background: rgba(15, 23, 42, 0.6) !important;
-            color: #e2e8f0 !important;
-            border: 1px solid rgba(148, 163, 184, 0.25) !important;
-        }
-
-        section[data-testid="stSidebar"] .stMarkdown,
-        section[data-testid="stSidebar"] label,
-        section[data-testid="stSidebar"] .stCaption {
-            color: #e2e8f0 !important;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
-
 def get_display_user() -> str:
     db_user = st.session_state.get("db_user")
     if db_user and getattr(db_user, "email", None):
@@ -290,23 +150,23 @@ def get_display_user() -> str:
 # =========================================================
 class PDFReport(FPDF):
     def header(self):
-        self.set_font('Helvetica', 'B', 15)
+        self.set_font('Arial', 'B', 15)
         self.cell(0, 10, 'TCO Calculator Report', 0, 1, 'C')
         self.ln(5)
 
     def footer(self):
         self.set_y(-15)
-        self.set_font('Helvetica', 'I', 8)
+        self.set_font('Arial', 'I', 8)
         self.cell(0, 10, f'Page {self.page_no()}', 0, 0, 'C')
 
     def chapter_title(self, txt):
-        self.set_font('Helvetica', 'B', 12)
+        self.set_font('Arial', 'B', 12)
         self.set_fill_color(200, 220, 255)
         self.cell(0, 8, txt, 0, 1, 'L', 1)
         self.ln(4)
 
     def chapter_body(self, txt):
-        self.set_font('Helvetica', '', 10)
+        self.set_font('Arial', '', 10)
         self.multi_cell(0, 5, txt)
         self.ln()
 
@@ -316,7 +176,7 @@ def build_pdf_report(results: List[CalculationResult], user_name: str) -> bytes:
     pdf.set_auto_page_break(auto=True, margin=15)
     
     # Meta Info
-    pdf.set_font("Helvetica", "", 10)
+    pdf.set_font("Arial", "", 10)
     pdf.cell(0, 6, f"Gerado em: {datetime.now().strftime('%Y-%m-%d %H:%M')}", 0, 1)
     pdf.cell(0, 6, f"Utilizador: {user_name}", 0, 1)
     pdf.ln(10)
@@ -325,7 +185,7 @@ def build_pdf_report(results: List[CalculationResult], user_name: str) -> bytes:
     pdf.chapter_title("Comparativo Geral")
     
     # Header
-    pdf.set_font("Helvetica", "B", 9)
+    pdf.set_font("Arial", "B", 9)
     cols = ["Viatura", "TCO Total", "EUR/Km", "Revenda"]
     col_widths = [60, 40, 40, 40]
     
@@ -334,7 +194,7 @@ def build_pdf_report(results: List[CalculationResult], user_name: str) -> bytes:
     pdf.ln()
     
     # Rows
-    pdf.set_font("Helvetica", "", 9)
+    pdf.set_font("Arial", "", 9)
     for r in results:
         pdf.cell(col_widths[0], 7, r.vehicle_name, 1)
         pdf.cell(col_widths[1], 7, f"{r.total_cost:,.2f}", 1, 0, 'R')
@@ -348,7 +208,7 @@ def build_pdf_report(results: List[CalculationResult], user_name: str) -> bytes:
     for r in results:
         pdf.chapter_title(f"Detalhe: {r.vehicle_name}")
         
-        pdf.set_font("Helvetica", "", 9)
+        pdf.set_font("Arial", "", 9)
         pdf.cell(50, 6, "Aquisicao:", 0)
         pdf.cell(50, 6, f"{r.acquisition_cost:,.2f}", 0, 1)
         
@@ -368,10 +228,7 @@ def build_pdf_report(results: List[CalculationResult], user_name: str) -> bytes:
         pdf.cell(50, 6, f"{r.resale_value:,.2f}", 0, 1)
         pdf.ln(5)
 
-    raw = pdf.output()
-    if isinstance(raw, (bytes, bytearray)):
-        return bytes(raw)
-    return raw.encode('latin-1', 'replace')
+    return pdf.output(dest='S').encode('latin-1', 'replace')
 
 
 # =========================================================
@@ -592,7 +449,7 @@ def render_saved_sims(show_header: bool = True):
     for sim in st.session_state.saved_sims[:20]:
         c1, c2, c3 = st.columns([5, 1, 1])
         with c1:
-            st.write(f"**{sim.get('id','sim')}** — {sim.get('saved_at','')}")
+            st.write(f"**{sim.get('id','sim')}** â€” {sim.get('saved_at','')}")
         with c2:
             if st.button(t("load"), key=f"load_{sim.get('id')}"):
                 st.session_state["pending_load_sim"] = sim
@@ -622,18 +479,12 @@ def main():
 
     hold_years = int(st.session_state.params.hold_years)
     annual_km = int(st.session_state.params.annual_km)
-    annual_km_label = f"{annual_km:,}".replace(",", " ")
-    st.markdown(
-        f"""
-        <div class="hero">
-            <div>
-                <div class="hero-title">{t("app_title")}</div>
-                <div class="hero-caption">{t("app_caption")}</div>
-            </div>
-            <div class="hero-chip">{hold_years} anos &bull; {annual_km_label} km/ano</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
+    render_hero(
+        t("app_title"),
+        t("app_caption"),
+        hold_years,
+        annual_km,
+        len(st.session_state.vehicles),
     )
 
     # Sidebar assumptions
@@ -753,11 +604,12 @@ def main():
         with c3:
             st.number_input(t("km_current"), 0, 500000, step=1000, key="v_km_current")
             st.toggle(t("imported"), key="v_imported")
-            if st.session_state["fuel_type"] != "Elétrico":
+            if st.session_state["v_imported"] and st.session_state["fuel_type"] != "Elétrico":
                 st.number_input(t("co2"), 0, 400, key="v_co2")
                 st.number_input(t("cc"), 0, 6000, step=100, key="v_cc")
             else:
-                # CO2/CC não aplicável para elétricos
+                # CO2/CC não aplicável (mantemos 0 no cálculo sem mexer no estado do widget)
+                # (sem alteração de st.session_state aqui para evitar erro de widget)
                 pass
         # --- callbacks (evita modificar st.session_state depois dos widgets estarem instanciados) ---
         if 'last_vehicle_error' not in st.session_state: st.session_state['last_vehicle_error'] = ''
@@ -767,10 +619,10 @@ def main():
             try:
                 vid = st.session_state.get('editing_id') or f"v_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}"
                 fuel = st.session_state.get('fuel_type', 'Gasolina')
-                # CO2/cc usados para IUC (todos os ICE) e ISV (importados)
+                # CO2/cc só faz sentido para importado não-elétrico
                 imported = bool(st.session_state.get('v_imported', False))
-                co2 = float(st.session_state.get('v_co2', 0) or 0) if fuel != 'Elétrico' else 0.0
-                cc = int(st.session_state.get('v_cc', 0) or 0) if fuel != 'Elétrico' else 0
+                co2 = float(st.session_state.get('v_co2', 0) or 0) if imported and fuel != 'Elétrico' else 0.0
+                cc = int(st.session_state.get('v_cc', 0) or 0) if imported and fuel != 'Elétrico' else 0
 
                 v = Vehicle(
                     id=vid,
@@ -901,38 +753,35 @@ def main():
                     r.delta_total = r.total_cost - base.total_cost
                     r.delta_km = r.cost_per_km - base.cost_per_km
 
+                # Enrich results with vehicle metadata for the leaderboard
+                veh_by_name = {v.name: v for v in st.session_state.vehicles}
+                for r in results:
+                    v = veh_by_name.get(r.vehicle_name)
+                    if v is not None:
+                        r.fuel_type = v.fuel_type
+                        r.year = v.year
+                        r.consumption = v.consumption
+                        r.is_imported = v.is_imported
+
+                render_leaderboard(results, base_name=base_name)
+
                 # ---------------- CHART 1: Resumo (3 Bars) ----------------
                 # Bar 1: TCO Liquido
                 # Bar 2: Custos Brutos (Soma de tudo menos revenda)
                 # Bar 3: Revenda
-                
+
                 chart_data = []
                 for r in results:
-                    gross_cost = (r.acquisition_cost + r.energy_cost + r.maint_cost + 
+                    gross_cost = (r.acquisition_cost + r.energy_cost + r.maint_cost +
                                   r.insurance_fiscality_cost + r.tolls_parking_cost)
-                    chart_data.append({
-                        "Viatura": r.vehicle_name,
-                        "Métrica": "TCO Líquido",
-                        "Valor": r.total_cost,
-                        "Color": "#1F7AE0"
-                    })
-                    chart_data.append({
-                        "Viatura": r.vehicle_name,
-                        "Métrica": "Custos Brutos",
-                        "Valor": gross_cost,
-                        "Color": "#0F766E"
-                    })
-                    chart_data.append({
-                        "Viatura": r.vehicle_name,
-                        "Métrica": "Valor Revenda",
-                        "Valor": r.resale_value,
-                        "Color": "#2FB6C2"
-                    })
-                
+                    chart_data.append({"Viatura": r.vehicle_name, "Métrica": "TCO Líquido", "Valor": r.total_cost})
+                    chart_data.append({"Viatura": r.vehicle_name, "Métrica": "Custos Brutos", "Valor": gross_cost})
+                    chart_data.append({"Viatura": r.vehicle_name, "Métrica": "Valor Revenda", "Valor": r.resale_value})
+
                 df_chart = pd.DataFrame(chart_data)
-                
+
                 fig = go.Figure()
-                for metric in ["TCO Líquido", "Custos Brutos", "Valor Revenda"]:
+                for i, metric in enumerate(["TCO Líquido", "Custos Brutos", "Valor Revenda"]):
                     subset = df_chart[df_chart["Métrica"] == metric]
                     fig.add_trace(go.Bar(
                         name=metric,
@@ -940,15 +789,16 @@ def main():
                         y=subset["Valor"],
                         text=[f"{euro(v)}" for v in subset["Valor"]],
                         textposition="auto",
-                        marker_color=subset["Color"].iloc[0] if not subset.empty else "grey"
+                        marker_color=VEHICLE_PALETTE[i % len(VEHICLE_PALETTE)],
                     ))
-                
+
                 fig.update_layout(
                     barmode="group",
                     title=t("chart_title"),
                     yaxis_title="€",
                     uniformtext_minsize=8
                 )
+                style_plotly(fig)
                 st.plotly_chart(fig, use_container_width=True)
 
                 # ---------------- CHART 2: Detalhe (Breakdown) ----------------
@@ -965,16 +815,13 @@ def main():
                         } for r in results
                     }).T
 
-                    # Colors: blue, lilac, grey
-                    palette = ["#1F7AE0", "#2FB6C2", "#7DD3FC", "#0F172A", "#64748B", "#94A3B8"]
-
                     fig_sub = go.Figure()
-                    for i, col in enumerate(df_plot.columns):
+                    for col in df_plot.columns:
                         fig_sub.add_trace(go.Bar(
                             name=col,
                             x=df_plot.index,
                             y=df_plot[col],
-                            marker_color=palette[i % len(palette)],
+                            marker_color=SEG_COLORS.get(col, "#7a8a85"),
                             text=[f"{v:,.0f}".replace(",", " ") for v in df_plot[col].values],
                             textposition="auto"
                         ))
@@ -983,6 +830,7 @@ def main():
                         title="Detalhe dos Custos Brutos",
                         uniformtext_minsize=8
                     )
+                    style_plotly(fig_sub)
                     st.plotly_chart(fig_sub, use_container_width=True)
 
                 # Table with categories as rows and vehicles as columns
@@ -1000,34 +848,56 @@ def main():
                     ("Km no fim", "km_at_end"),
                 ]
 
+                # Build table with raw numeric values where we want heatmap colouring;
+                # format for display per-row via Styler.format below.
+                MONEY_ROWS = {"Aquisição", "Revenda", "Energia/Combustível",
+                              "Portagens+Parqueamento", "Seguro+Fiscalidade",
+                              "Reparações+Manutenção", "TCO Total"}
+                STRING_ATTRS = {"energy_unit"}
+                COUNT_ATTRS = {"energy_qty", "km_at_end"}
+
                 table = {}
                 for cat, attr in categories:
                     row = {}
                     for r in results:
                         val = getattr(r, attr)
-                        if attr in ["cost_per_km"]:
-                            row[r.vehicle_name] = f"{val:.3f}"
-                        elif attr in ["energy_unit"]:
+                        if attr in STRING_ATTRS:
                             row[r.vehicle_name] = str(val)
-                        elif attr in ["energy_qty", "km_at_end"]:
+                        elif attr in COUNT_ATTRS:
                             row[r.vehicle_name] = f"{val:,.0f}".replace(",", " ")
-                        elif attr in ["resale_value"]:
-                            row[r.vehicle_name] = euro(val)
                         else:
-                            row[r.vehicle_name] = euro(val)
+                            row[r.vehicle_name] = val
                     table[cat] = row
 
                 df_table = pd.DataFrame(table).T
-                
-                # Highlight columns approach for Styler (rows are indices)
-                def highlight_rows(row):
-                    if row.name in ["TCO Total", "€/km"]:
-                        # Text color light blue (approx #3B82F6), Bold. No background.
-                        return ['color: #3B82F6; font-weight: bold'] * len(row)
-                    return [''] * len(row)
+
+                styler = heatmap_styler(
+                    df_table,
+                    total_rows=["TCO Total", "€/km"],
+                    rate_rows=["€/km"],
+                    credit_rows=["Revenda"],
+                )
+
+                def _fmt_money(v):
+                    try:
+                        return euro(float(v))
+                    except Exception:
+                        return v
+
+                def _fmt_rate(v):
+                    try:
+                        return f"{float(v):.3f}".replace(".", ",")
+                    except Exception:
+                        return v
+
+                for row_name in df_table.index:
+                    if row_name == "€/km":
+                        styler = styler.format(_fmt_rate, subset=pd.IndexSlice[[row_name], :])
+                    elif row_name in MONEY_ROWS:
+                        styler = styler.format(_fmt_money, subset=pd.IndexSlice[[row_name], :])
 
                 st.subheader(t("comparison_table"))
-                st.dataframe(df_table.style.apply(highlight_rows, axis=1), use_container_width=True)
+                st.dataframe(styler, use_container_width=True)
 
                 st.caption(t("disclaimer"))
 
